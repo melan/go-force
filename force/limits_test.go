@@ -7,7 +7,7 @@ import (
 func TestLimits(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)

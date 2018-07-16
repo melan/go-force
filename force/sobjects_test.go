@@ -26,7 +26,7 @@ func (t *CustomSObject) ApiName() string {
 func TestDescribeSobjects(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)
@@ -47,7 +47,7 @@ func TestDescribeSobjects(t *testing.T) {
 func TestDescribeSObject(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)
@@ -71,7 +71,7 @@ func TestDescribeSObject(t *testing.T) {
 func TestGetSObject(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)
@@ -118,7 +118,7 @@ func TestGetSObject(t *testing.T) {
 func TestUpdateSObject(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)
@@ -158,7 +158,7 @@ func TestUpdateSObject(t *testing.T) {
 func TestInsertDeleteSObject(t *testing.T) {
 	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, nil)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("unable to create oauth: %v", err)

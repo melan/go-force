@@ -4,7 +4,6 @@
 package force
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -48,23 +47,12 @@ type ForceApiLogger interface {
 // can easily be written for other logging packages (e.g., the
 // golang-sanctioned glog framework).
 func (forceApi *Api) TraceOn(prefix string, logger ForceApiLogger) {
-	forceApi.logger = logger
-	if prefix == "" {
-		forceApi.logPrefix = prefix
-	} else {
-		forceApi.logPrefix = fmt.Sprintf("%s ", prefix)
-	}
+	forceApi.traceable.TraceOn(prefix, logger)
+	forceApi.oauth.TraceOn(prefix, logger)
 }
 
 // TraceOff turns off tracing. It is idempotent.
 func (forceApi *Api) TraceOff() {
-	forceApi.logger = nil
-	forceApi.logPrefix = ""
-}
-
-func trace(name string, value interface{}, format string, logPrefix string, logger ForceApiLogger) {
-	if logger != nil {
-		logMsg := "%s%s " + format + "\n"
-		logger.Printf(logMsg, logPrefix, name, value)
-	}
+	forceApi.traceable.TraceOff()
+	forceApi.oauth.TraceOff()
 }

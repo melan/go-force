@@ -15,9 +15,8 @@ const (
 )
 
 func TestOauth(t *testing.T) {
-	var logger ForceApiLogger
 	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
-		testEnvironment, logger)
+		testEnvironment)
 
 	if err != nil {
 		t.Fatalf("Unable to create Api for test: %v", err)
@@ -29,7 +28,7 @@ func TestOauth(t *testing.T) {
 	}
 
 	// We shouldn't hit any errors creating a new force instance and manually passing in these oauth details now.
-	newForceApi, err := CreateOAuthWithAccessToken(testClientId, oauth.AccessToken, oauth.InstanceUrl, logger)
+	newForceApi, err := CreateOAuthWithAccessToken(testClientId, oauth.AccessToken, oauth.InstanceUrl)
 	if err != nil {
 		t.Fatalf("Unable to create new force api instance using pre-defined oauth details: %#v", err)
 	}

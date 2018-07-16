@@ -20,6 +20,7 @@ const (
 )
 
 type OAuth struct {
+	*traceable
 	AccessToken string `json:"access_token"`
 	InstanceUrl string `json:"instance_url"`
 	Id          string `json:"id"`
@@ -34,18 +35,17 @@ type OAuth struct {
 	password      string
 	securityToken string
 	environment   string
-	logger        ForceApiLogger
 }
 
-func CreateOAuth(clientId, clientSecret, userName, password, securityToken, environment string, logger ForceApiLogger) (*OAuth, error) {
+func CreateOAuth(clientId, clientSecret, userName, password, securityToken, environment string) (*OAuth, error) {
 	oauth := &OAuth{
+		traceable:     &traceable{},
 		clientId:      clientId,
 		clientSecret:  clientSecret,
 		userName:      userName,
 		password:      password,
 		securityToken: securityToken,
 		environment:   environment,
-		logger:        logger,
 		client:        &http.Client{},
 	}
 
@@ -58,12 +58,12 @@ func CreateOAuth(clientId, clientSecret, userName, password, securityToken, envi
 	return oauth, nil
 }
 
-func CreateOAuthWithAccessToken(clientId, accessToken, instanceUrl string, logger ForceApiLogger) (*OAuth, error) {
+func CreateOAuthWithAccessToken(clientId, accessToken, instanceUrl string) (*OAuth, error) {
 	oauth := &OAuth{
+		traceable:   &traceable{},
 		clientId:    clientId,
 		AccessToken: accessToken,
 		InstanceUrl: instanceUrl,
-		logger:      logger,
 		client:      &http.Client{},
 	}
 
@@ -75,12 +75,12 @@ func CreateOAuthWithAccessToken(clientId, accessToken, instanceUrl string, logge
 	return oauth, nil
 }
 
-func CreateOAuthWithRefreshToken(clientId, accessToken, instanceUrl string, logger ForceApiLogger) (*OAuth, error) {
+func CreateOAuthWithRefreshToken(clientId, accessToken, instanceUrl string) (*OAuth, error) {
 	oauth := &OAuth{
+		traceable:   &traceable{},
 		clientId:    clientId,
 		AccessToken: accessToken,
 		InstanceUrl: instanceUrl,
-		logger:      logger,
 		client:      &http.Client{},
 	}
 
@@ -228,13 +228,13 @@ func (oauth *OAuth) request(method, path string, params url.Values, payload, out
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", "Bearer", oauth.AccessToken))
 
 	// Send
-	traceRequest(req, oauth.logger)
+	oauth.traceRequest(req)
 	resp, err := oauth.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error sending %v request: %v", method, err)
 	}
 	defer resp.Body.Close()
-	traceResponse(resp, oauth.logger)
+	oauth.traceResponse(resp)
 
 	// Sometimes the force API returns no body, we should catch this early
 	if resp.StatusCode == http.StatusNoContent {
@@ -245,7 +245,7 @@ func (oauth *OAuth) request(method, path string, params url.Values, payload, out
 	if err != nil {
 		return fmt.Errorf("error reading response bytes: %v", err)
 	}
-	traceResponseBody(respBytes, oauth.logger)
+	oauth.traceResponseBody(respBytes)
 
 	// Attempt to parse response into out
 	var objectUnmarshalErr error
@@ -284,20 +284,14 @@ func (oauth *OAuth) request(method, path string, params url.Values, payload, out
 	return nil
 }
 
-func traceRequest(req *http.Request, logger ForceApiLogger) {
-	if logger != nil {
-		trace("Request:", req, "%v", "", logger)
-	}
+func (oauth *OAuth) traceRequest(req *http.Request) {
+	oauth.traceable.trace("Request:", req, "%v")
 }
 
-func traceResponse(resp *http.Response, logger ForceApiLogger) {
-	if logger != nil {
-		trace("Response:", resp, "%v", "", logger)
-	}
+func (oauth *OAuth) traceResponse(resp *http.Response) {
+	oauth.traceable.trace("Response:", resp, "%v")
 }
 
-func traceResponseBody(body []byte, logger ForceApiLogger) {
-	if logger != nil {
-		trace("Response Body:", string(body), "%s", "", logger)
-	}
+func (oauth *OAuth) traceResponseBody(body []byte) {
+	oauth.traceable.trace("Response Body:", string(body), "%s")
 }

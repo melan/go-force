@@ -20,6 +20,7 @@ const (
 )
 
 type Api struct {
+	*traceable
 	apiVersion             string
 	oauth                  *OAuth
 	apiResources           map[string]string
