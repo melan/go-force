@@ -1,8 +1,10 @@
 package force
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,13 +19,14 @@ const (
 	invalidSessionErrorCode = "INVALID_SESSION_ID"
 )
 
-type forceOauth struct {
+type OAuth struct {
 	AccessToken string `json:"access_token"`
 	InstanceUrl string `json:"instance_url"`
 	Id          string `json:"id"`
 	IssuedAt    string `json:"issued_at"`
 	Signature   string `json:"signature"`
 
+	client        *http.Client
 	clientId      string
 	clientSecret  string
 	refreshToken  string
@@ -31,17 +34,78 @@ type forceOauth struct {
 	password      string
 	securityToken string
 	environment   string
+	logger        ForceApiLogger
 }
 
-func (oauth *forceOauth) Validate() error {
+func CreateOAuth(clientId, clientSecret, userName, password, securityToken, environment string, logger ForceApiLogger) (*OAuth, error) {
+	oauth := &OAuth{
+		clientId:      clientId,
+		clientSecret:  clientSecret,
+		userName:      userName,
+		password:      password,
+		securityToken: securityToken,
+		environment:   environment,
+		logger:        logger,
+		client:        &http.Client{},
+	}
+
+	// Init oauth
+	err := oauth.Authenticate()
+	if err != nil {
+		return nil, err
+	}
+
+	return oauth, nil
+}
+
+func CreateOAuthWithAccessToken(clientId, accessToken, instanceUrl string, logger ForceApiLogger) (*OAuth, error) {
+	oauth := &OAuth{
+		clientId:    clientId,
+		AccessToken: accessToken,
+		InstanceUrl: instanceUrl,
+		logger:      logger,
+		client:      &http.Client{},
+	}
+
+	// We need to check for oath correctness here, since we are not generating the token ourselves.
+	if err := oauth.Validate(); err != nil {
+		return nil, err
+	}
+
+	return oauth, nil
+}
+
+func CreateOAuthWithRefreshToken(clientId, accessToken, instanceUrl string, logger ForceApiLogger) (*OAuth, error) {
+	oauth := &OAuth{
+		clientId:    clientId,
+		AccessToken: accessToken,
+		InstanceUrl: instanceUrl,
+		logger:      logger,
+		client:      &http.Client{},
+	}
+
+	// obtain access token
+	if err := oauth.RefreshToken(); err != nil {
+		return nil, err
+	}
+
+	// We need to check for oath correctness here, since we are not generating the token ourselves.
+	if err := oauth.Validate(); err != nil {
+		return nil, err
+	}
+
+	return oauth, nil
+}
+
+func (oauth *OAuth) Validate() error {
 	if oauth == nil || len(oauth.InstanceUrl) == 0 || len(oauth.AccessToken) == 0 {
-		return fmt.Errorf("Invalid Force Oauth Object: %#v", oauth)
+		return fmt.Errorf("invalid Force OAuth Object: %#v", oauth)
 	}
 
 	return nil
 }
 
-func (oauth *forceOauth) Expired(apiErrors ApiErrors) bool {
+func (oauth *OAuth) Expired(apiErrors ApiErrors) bool {
 	for _, err := range apiErrors {
 		if err.ErrorCode == invalidSessionErrorCode {
 			return true
@@ -51,7 +115,7 @@ func (oauth *forceOauth) Expired(apiErrors ApiErrors) bool {
 	return false
 }
 
-func (oauth *forceOauth) Authenticate() error {
+func (oauth *OAuth) Authenticate() error {
 	payload := url.Values{
 		"grant_type":    {grantType},
 		"client_id":     {oauth.clientId},
@@ -72,7 +136,7 @@ func (oauth *forceOauth) Authenticate() error {
 	// Build Request
 	req, err := http.NewRequest("POST", uri, body)
 	if err != nil {
-		return fmt.Errorf("Error creating authentication request: %v", err)
+		return fmt.Errorf("error creating authentication request: %v", err)
 	}
 
 	// Add Headers
@@ -80,15 +144,15 @@ func (oauth *forceOauth) Authenticate() error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", responseType)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := oauth.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error sending authentication request: %v", err)
+		return fmt.Errorf("error sending authentication request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("Error reading authentication response bytes: %v", err)
+		return fmt.Errorf("error reading authentication response bytes: %v", err)
 	}
 
 	// Attempt to parse response as a force.com api error
@@ -101,8 +165,139 @@ func (oauth *forceOauth) Authenticate() error {
 	}
 
 	if err := json.Unmarshal(respBytes, oauth); err != nil {
-		return fmt.Errorf("Unable to unmarshal authentication response: %v", err)
+		return fmt.Errorf("unable to unmarshal authentication response: %v", err)
 	}
 
 	return nil
+}
+
+func (oauth *OAuth) RefreshToken() error {
+	res := &RefreshTokenResponse{}
+	payload := map[string]string{
+		"grant_type":    "refresh_token",
+		"refresh_token": oauth.refreshToken,
+		"client_id":     oauth.clientId,
+		"client_secret": oauth.clientSecret,
+	}
+
+	err := oauth.request("POST", "/services/oauth2/token", nil, payload, res)
+	if err != nil {
+		return err
+	}
+
+	oauth.AccessToken = res.AccessToken
+	return nil
+}
+
+func (oauth *OAuth) request(method, path string, params url.Values, payload, out interface{}) error {
+	if err := oauth.Validate(); err != nil {
+		return fmt.Errorf("error creating %v request: %v", method, err)
+	}
+
+	// Build Uri
+	var uri bytes.Buffer
+	uri.WriteString(oauth.InstanceUrl)
+	uri.WriteString(path)
+	if params != nil && len(params) != 0 {
+		uri.WriteString("?")
+		uri.WriteString(params.Encode())
+	}
+
+	// Build body
+	var body io.Reader
+	if payload != nil {
+
+		jsonBytes, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("error marshaling encoded payload: %v", err)
+		}
+
+		body = bytes.NewReader(jsonBytes)
+	}
+
+	// Build Request
+	req, err := http.NewRequest(method, uri.String(), body)
+	if err != nil {
+		return fmt.Errorf("error creating %v request: %v", method, err)
+	}
+
+	// Add Headers
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", responseType)
+	req.Header.Set("Authorization", fmt.Sprintf("%v %v", "Bearer", oauth.AccessToken))
+
+	// Send
+	traceRequest(req, oauth.logger)
+	resp, err := oauth.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending %v request: %v", method, err)
+	}
+	defer resp.Body.Close()
+	traceResponse(resp, oauth.logger)
+
+	// Sometimes the force API returns no body, we should catch this early
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading response bytes: %v", err)
+	}
+	traceResponseBody(respBytes, oauth.logger)
+
+	// Attempt to parse response into out
+	var objectUnmarshalErr error
+	if out != nil {
+		objectUnmarshalErr = json.Unmarshal(respBytes, out)
+		if objectUnmarshalErr == nil {
+			return nil
+		}
+	}
+
+	// Attempt to parse response as a force.com api error before returning object unmarshal err
+	apiErrors := ApiErrors{}
+	if marshalErr := json.Unmarshal(respBytes, &apiErrors); marshalErr == nil {
+		if apiErrors.Validate() {
+			// Check if error is oauth token expired
+			if oauth.Expired(apiErrors) {
+				// Reauthenticate then attempt query again
+				oauthErr := oauth.Authenticate()
+				if oauthErr != nil {
+					return oauthErr
+				}
+
+				return oauth.request(method, path, params, payload, out)
+			}
+
+			return apiErrors
+		}
+	}
+
+	if objectUnmarshalErr != nil {
+		// Not a force.com api error. Just an unmarshalling error.
+		return fmt.Errorf("unable to unmarshal response to object: %v", objectUnmarshalErr)
+	}
+
+	// Sometimes no response is expected. For example delete and update. We still have to make sure an error wasn't returned.
+	return nil
+}
+
+func traceRequest(req *http.Request, logger ForceApiLogger) {
+	if logger != nil {
+		trace("Request:", req, "%v", "", logger)
+	}
+}
+
+func traceResponse(resp *http.Response, logger ForceApiLogger) {
+	if logger != nil {
+		trace("Response:", resp, "%v", "", logger)
+	}
+}
+
+func traceResponseBody(body []byte, logger ForceApiLogger) {
+	if logger != nil {
+		trace("Response Body:", string(body), "%s", "", logger)
+	}
 }

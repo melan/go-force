@@ -17,7 +17,19 @@ type AccountQueryResponse struct {
 }
 
 func TestQuery(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	desc, err := forceApi.DescribeSObject(&sobjects.Account{})
 	if err != nil {
 		t.Fatalf("Failed to retrieve description of sobject: %v", err)
@@ -33,7 +45,19 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryAll(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	// First Insert and Delete an Account
 	newId := insertSObject(forceApi, t)
 	deleteSObject(forceApi, t, newId)

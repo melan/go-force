@@ -24,8 +24,20 @@ func (t *CustomSObject) ApiName() string {
 }
 
 func TestDescribeSobjects(t *testing.T) {
-	forceAPI := createTest()
-	objects, err := forceAPI.DescribeSObjects()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
+	objects, err := forceApi.DescribeSObjects()
 	if err != nil {
 		t.Fatal("Failed to retrieve SObjects", err)
 	}
@@ -33,7 +45,19 @@ func TestDescribeSobjects(t *testing.T) {
 }
 
 func TestDescribeSObject(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	acc := &sobjects.Account{}
 
 	desc, err := forceApi.DescribeSObject(acc)
@@ -45,11 +69,23 @@ func TestDescribeSObject(t *testing.T) {
 }
 
 func TestGetSObject(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	// Test Standard Object
 	acc := &sobjects.Account{}
 
-	err := forceApi.GetSObject(AccountId, nil, acc)
+	err = forceApi.GetSObject(AccountId, nil, acc)
 	if err != nil {
 		t.Fatalf("Cannot retrieve SObject Account: %v", err)
 	}
@@ -80,7 +116,19 @@ func TestGetSObject(t *testing.T) {
 }
 
 func TestUpdateSObject(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	// Need some random text for updating a field.
 	rand.Seed(time.Now().UTC().UnixNano())
 	someText := randomString(10)
@@ -89,7 +137,7 @@ func TestUpdateSObject(t *testing.T) {
 	acc := &sobjects.Account{}
 	acc.Name = someText
 
-	err := forceApi.UpdateSObject(AccountId, acc)
+	err = forceApi.UpdateSObject(AccountId, acc)
 	if err != nil {
 		t.Fatalf("Cannot update SObject Account: %v", err)
 	}
@@ -108,12 +156,24 @@ func TestUpdateSObject(t *testing.T) {
 }
 
 func TestInsertDeleteSObject(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	objectId := insertSObject(forceApi, t)
 	deleteSObject(forceApi, t, objectId)
 }
 
-func insertSObject(forceApi *ForceApi, t *testing.T) string {
+func insertSObject(forceApi *Api, t *testing.T) string {
 	// Need some random text for name field.
 	rand.Seed(time.Now().UTC().UnixNano())
 	someText := randomString(10)
@@ -134,7 +194,7 @@ func insertSObject(forceApi *ForceApi, t *testing.T) string {
 	return resp.Id
 }
 
-func deleteSObject(forceApi *ForceApi, t *testing.T, id string) {
+func deleteSObject(forceApi *Api, t *testing.T, id string) {
 	// Test Standard Object
 	acc := &sobjects.Account{}
 

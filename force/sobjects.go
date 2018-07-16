@@ -20,15 +20,15 @@ type SObjectResponse struct {
 	Success bool      `force:"success,omitempty"`
 }
 
-func (forceAPI *ForceApi) DescribeSObjects() (map[string]*SObjectMetaData, error) {
-	if err := forceAPI.getApiSObjects(); err != nil {
+func (forceApi *Api) DescribeSObjects() (map[string]*SObjectMetaData, error) {
+	if err := forceApi.getApiSObjects(); err != nil {
 		return nil, err
 	}
 
-	return forceAPI.apiSObjects, nil
+	return forceApi.apiSObjects, nil
 }
 
-func (forceApi *ForceApi) DescribeSObject(in SObject) (resp *SObjectDescription, err error) {
+func (forceApi *Api) DescribeSObject(in SObject) (resp *SObjectDescription, err error) {
 	// Check cache
 	resp, ok := forceApi.apiSObjectDescriptions[in.ApiName()]
 	if !ok {
@@ -71,7 +71,7 @@ func (forceApi *ForceApi) DescribeSObject(in SObject) (resp *SObjectDescription,
 	return
 }
 
-func (forceApi *ForceApi) GetSObject(id string, fields []string, out SObject) (err error) {
+func (forceApi *Api) GetSObject(id string, fields []string, out SObject) (err error) {
 	uri := strings.Replace(forceApi.apiSObjects[out.ApiName()].URLs[rowTemplateKey], idKey, id, 1)
 
 	params := url.Values{}
@@ -84,7 +84,7 @@ func (forceApi *ForceApi) GetSObject(id string, fields []string, out SObject) (e
 	return
 }
 
-func (forceApi *ForceApi) InsertSObject(in SObject) (resp *SObjectResponse, err error) {
+func (forceApi *Api) InsertSObject(in SObject) (resp *SObjectResponse, err error) {
 	uri := forceApi.apiSObjects[in.ApiName()].URLs[sObjectKey]
 
 	resp = &SObjectResponse{}
@@ -93,7 +93,7 @@ func (forceApi *ForceApi) InsertSObject(in SObject) (resp *SObjectResponse, err 
 	return
 }
 
-func (forceApi *ForceApi) UpdateSObject(id string, in SObject) (err error) {
+func (forceApi *Api) UpdateSObject(id string, in SObject) (err error) {
 	uri := strings.Replace(forceApi.apiSObjects[in.ApiName()].URLs[rowTemplateKey], idKey, id, 1)
 
 	err = forceApi.Patch(uri, nil, in.(interface{}), nil)
@@ -101,7 +101,7 @@ func (forceApi *ForceApi) UpdateSObject(id string, in SObject) (err error) {
 	return
 }
 
-func (forceApi *ForceApi) DeleteSObject(id string, in SObject) (err error) {
+func (forceApi *Api) DeleteSObject(id string, in SObject) (err error) {
 	uri := strings.Replace(forceApi.apiSObjects[in.ApiName()].URLs[rowTemplateKey], idKey, id, 1)
 
 	err = forceApi.Delete(uri, nil)
@@ -109,7 +109,7 @@ func (forceApi *ForceApi) DeleteSObject(id string, in SObject) (err error) {
 	return
 }
 
-func (forceApi *ForceApi) GetSObjectByExternalId(id string, fields []string, out SObject) (err error) {
+func (forceApi *Api) GetSObjectByExternalId(id string, fields []string, out SObject) (err error) {
 	uri := fmt.Sprintf("%v/%v/%v", forceApi.apiSObjects[out.ApiName()].URLs[sObjectKey],
 		out.ExternalIdApiName(), id)
 
@@ -123,7 +123,7 @@ func (forceApi *ForceApi) GetSObjectByExternalId(id string, fields []string, out
 	return
 }
 
-func (forceApi *ForceApi) UpsertSObjectByExternalId(id string, in SObject) (resp *SObjectResponse, err error) {
+func (forceApi *Api) UpsertSObjectByExternalId(id string, in SObject) (resp *SObjectResponse, err error) {
 	uri := fmt.Sprintf("%v/%v/%v", forceApi.apiSObjects[in.ApiName()].URLs[sObjectKey],
 		in.ExternalIdApiName(), id)
 
@@ -133,7 +133,7 @@ func (forceApi *ForceApi) UpsertSObjectByExternalId(id string, in SObject) (resp
 	return
 }
 
-func (forceApi *ForceApi) DeleteSObjectByExternalId(id string, in SObject) (err error) {
+func (forceApi *Api) DeleteSObjectByExternalId(id string, in SObject) (err error) {
 	uri := fmt.Sprintf("%v/%v/%v", forceApi.apiSObjects[in.ApiName()].URLs[sObjectKey],
 		in.ExternalIdApiName(), id)
 

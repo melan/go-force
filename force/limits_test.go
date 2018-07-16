@@ -5,7 +5,19 @@ import (
 )
 
 func TestLimits(t *testing.T) {
-	forceApi := createTest()
+	// Manually grab an OAuth token, so that we can pass it into CreateWithAccessToken
+	oauth, err := CreateOAuth(testClientId, testClientSecret, testUserName, testPassword, testSecurityToken,
+		testEnvironment, nil)
+
+	if err != nil {
+		t.Fatalf("unable to create oauth: %v", err)
+	}
+
+	forceApi, err := CreateApi(testVersion, oauth)
+	if err != nil {
+		t.Fatalf("unable to create force API: %v", err)
+	}
+
 	limits, err := forceApi.GetLimits()
 	if err != nil {
 		// Developer Accounts, which the testbed uses, do not have access to the limits API. So this will always fail.

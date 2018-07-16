@@ -2,6 +2,7 @@ package force
 
 import (
 	"fmt"
+	"net/http"
 )
 
 const (
@@ -18,15 +19,16 @@ const (
 	resourcesUri = "/services/data/%v"
 )
 
-type ForceApi struct {
+type Api struct {
 	apiVersion             string
-	oauth                  *forceOauth
+	oauth                  *OAuth
 	apiResources           map[string]string
 	apiSObjects            map[string]*SObjectMetaData
 	apiSObjectDescriptions map[string]*SObjectDescription
 	apiMaxBatchSize        int64
 	logger                 ForceApiLogger
 	logPrefix              string
+	client                 *http.Client
 }
 
 type RefreshTokenResponse struct {
@@ -170,13 +172,13 @@ type ChildRelationship struct {
 	RelationshipName    string `json:"relationshipName"`
 }
 
-func (forceApi *ForceApi) getApiResources() error {
+func (forceApi *Api) getApiResources() error {
 	uri := fmt.Sprintf(resourcesUri, forceApi.apiVersion)
 
 	return forceApi.Get(uri, nil, &forceApi.apiResources)
 }
 
-func (forceApi *ForceApi) getApiSObjects() error {
+func (forceApi *Api) getApiSObjects() error {
 	uri := forceApi.apiResources[sObjectsKey]
 
 	list := &SObjectApiResponse{}
@@ -195,7 +197,7 @@ func (forceApi *ForceApi) getApiSObjects() error {
 	return nil
 }
 
-func (forceApi *ForceApi) getApiSObjectDescriptions() error {
+func (forceApi *Api) getApiSObjectDescriptions() error {
 	for name, metaData := range forceApi.apiSObjects {
 		uri := metaData.URLs[sObjectDescribeKey]
 
@@ -211,28 +213,10 @@ func (forceApi *ForceApi) getApiSObjectDescriptions() error {
 	return nil
 }
 
-func (forceApi *ForceApi) GetInstanceURL() string {
+func (forceApi *Api) GetInstanceURL() string {
 	return forceApi.oauth.InstanceUrl
 }
 
-func (forceApi *ForceApi) GetAccessToken() string {
+func (forceApi *Api) GetAccessToken() string {
 	return forceApi.oauth.AccessToken
-}
-
-func (forceApi *ForceApi) RefreshToken() error {
-	res := &RefreshTokenResponse{}
-	payload := map[string]string{
-		"grant_type":    "refresh_token",
-		"refresh_token": forceApi.oauth.refreshToken,
-		"client_id":     forceApi.oauth.clientId,
-		"client_secret": forceApi.oauth.clientSecret,
-	}
-
-	err := forceApi.Post("/services/oauth2/token", nil, payload, res)
-	if err != nil {
-		return err
-	}
-
-	forceApi.oauth.AccessToken = res.AccessToken
-	return nil
 }
