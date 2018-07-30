@@ -11,6 +11,7 @@ func CreateApi(version string, oauth *OAuth) (*Api, error) {
 	client := &http.Client{}
 
 	forceApi := &Api{
+		traceable:              &traceable{},
 		apiResources:           make(map[string]string),
 		apiSObjects:            make(map[string]*SObjectMetaData),
 		apiSObjectDescriptions: make(map[string]*SObjectDescription),

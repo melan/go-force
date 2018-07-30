@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+//go:generate go run ../gen_sobject_impl.go
+
 var baseFieldNameMap map[string]string
 
 func init() {
@@ -18,6 +20,12 @@ func init() {
 		"LastModifiedById": "LastModifiedById",
 		"SystemModstamp":   "SystemModstamp",
 	}
+}
+
+// Interface all standard and custom objects must implement. Needed for uri generation.
+type SObject interface {
+	ApiName() string
+	ExternalIdApiName() string
 }
 
 // Base struct that contains fields that all objects, standard and custom, include.
