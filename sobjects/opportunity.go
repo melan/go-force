@@ -1,4 +1,4 @@
-// This file was generated for SObject Opportunity, API Version v43.0 at 2018-07-30 03:42:13.530979077 -0400 EDT m=+2.966707202
+// This file was generated for SObject Opportunity, API Version v43.0 at 2018-07-30 03:47:48.329363948 -0400 EDT m=+34.673271418
 
 package sobjects
 

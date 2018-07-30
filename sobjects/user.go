@@ -1,4 +1,4 @@
-// This file was generated for SObject User, API Version v43.0 at 2018-07-30 03:42:13.925800739 -0400 EDT m=+3.361543679
+// This file was generated for SObject User, API Version v43.0 at 2018-07-30 03:47:25.791676558 -0400 EDT m=+12.134738326
 
 package sobjects
 
